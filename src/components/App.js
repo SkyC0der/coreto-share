@@ -1,14 +1,10 @@
-import DStorage from '../abis/DStorage.json'
+import Coreto from '../abis/Coreto.json'
 import React, { Component } from 'react';
 import Navbar from './Navbar'
 import Main from './Main'
 import Web3 from 'web3';
-
-import Web3Modal from "web3modal";
-
 import './App.css';
-import Testing from './testing';
-import Hero from './Hero';
+import Hero from './Hero'
 
 const ipfsClient = require('ipfs-http-client')
 const ipfs = ipfsClient({ host: 'ipfs.infura.io', port: 5001, protocol: 'https' }) // leaving out the arguments will default to these values
@@ -16,50 +12,47 @@ const ipfs = ipfsClient({ host: 'ipfs.infura.io', port: 5001, protocol: 'https' 
 class App extends Component {
 
   async componentWillMount() {
-    // await this.loadWeb3()
-    // await this.loadBlockchainData()
+    await this.loadWeb3()
+    await this.loadAccount()
   }
 
+  async loadWeb3() {
+    if (window.ethereum) {
+      window.web3 = new Web3(window.ethereum)
+      await window.ethereum.enable()
+    }
+    else if (window.web3) {
+      window.web3 = new Web3(window.web3.currentProvider)
+    }
+    else {
+      window.alert('Non-Ethereum browser detected. You should consider trying MetaMask!')
+    }
+  }
 
-  // async loadWeb3() {
-  //   // if (window.ethereum) {
-  //   //   window.web3 = new Web3(window.ethereum)
-  //   //   await window.ethereum.enable()
-  //   // }
-  //   // else if (window.web3) {
-  //   //   window.web3 = new Web3(window.web3.currentProvider)
-  //   // }
-  //   // else {
-  //   //   window.alert('Non-Ethereum browser detected. You should consider trying MetaMask!')
-  //   // }
-  //   const {ethereum} = window
-
-  // }
-
-  async loadBlockchainData() {
+  async loadAccount() {
     const web3 = window.web3
     // Load account
     const accounts = await web3.eth.getAccounts()
     this.setState({ account: accounts[0] })
     // Network ID
     const networkId = await web3.eth.net.getId()
-    const networkData = DStorage.networks[networkId]
+    const networkData = Coreto.networks[networkId]
     if(networkData) {
       // Assign contract
-      const dstorage = new web3.eth.Contract(DStorage.abi, networkData.address)
-      this.setState({ dstorage })
+      const coreto = new web3.eth.Contract(Coreto.abi, networkData.address)
+      this.setState({ coreto })
       // Get files amount
-      const filesCount = await dstorage.methods.fileCount().call()
+      const filesCount = await coreto.methods.fileCount().call()
       this.setState({ filesCount })
       // Load files&sort by the newest
       for (var i = filesCount; i >= 1; i--) {
-        const file = await dstorage.methods.files(i).call()
+        const file = await coreto.methods.files(i).call()
         this.setState({
           files: [...this.state.files, file]
         })
       }
     } else {
-      window.alert('DStorage contract not deployed to detected network.')
+      window.alert('Please switch to Ganache Network')
     }
   }
 
@@ -97,7 +90,7 @@ class App extends Component {
       if(this.state.type === ''){
         this.setState({type: 'none'})
       }
-      this.state.dstorage.methods.uploadFile(result[0].hash, result[0].size, this.state.type, this.state.name, description).send({ from: this.state.account }).on('transactionHash', (hash) => {
+      this.state.coreto.methods.uploadFile(result[0].hash, result[0].size, this.state.type, this.state.name, description).send({ from: this.state.account }).on('transactionHash', (hash) => {
         this.setState({
          loading: false,
          type: null,
@@ -115,7 +108,7 @@ class App extends Component {
     super(props)
     this.state = {
       account: '',
-      dstorage: null,
+      coreto: null,
       files: [],
       loading: false,
       type: null,
@@ -124,6 +117,8 @@ class App extends Component {
     this.uploadFile = this.uploadFile.bind(this)
     this.captureFile = this.captureFile.bind(this)
   }
+
+
 
   render() {
     return (
@@ -139,6 +134,9 @@ class App extends Component {
               uploadFile={this.uploadFile}
             />
         }
+        <div id="footer">
+          <p>Made with love by SkyCoder</p>
+        </div>
       </div>
     );
   }

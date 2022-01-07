@@ -1,5 +1,5 @@
-const DStorage = artifacts.require("DStorage");
+const Coreto = artifacts.require("Coreto");
 
 module.exports = function(deployer) {
-	deployer.deploy(DStorage)
+	deployer.deploy(Coreto)
 };
